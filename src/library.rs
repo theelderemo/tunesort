@@ -504,11 +504,13 @@ mod tests {
         let before = HashSet::new();
 
         let prev = std::env::var_os("XDG_DATA_HOME");
-        std::env::set_var("XDG_DATA_HOME", &home);
+        unsafe { std::env::set_var("XDG_DATA_HOME", &home) };
         let (trashed_file, trashed_info) = find_trashed(&original, &before);
-        match prev {
-            Some(v) => std::env::set_var("XDG_DATA_HOME", v),
-            None => std::env::remove_var("XDG_DATA_HOME"),
+        unsafe {
+            match prev {
+                Some(v) => std::env::set_var("XDG_DATA_HOME", v),
+                None => std::env::remove_var("XDG_DATA_HOME"),
+            }
         }
 
         assert_eq!(trashed_file, files.join("song.mp3"));
