@@ -300,11 +300,11 @@ fn trash_files_dirs(for_path: &Path) -> Vec<PathBuf> {
     dirs
 }
 
-extern "C" {
+unsafe extern "C" {
     fn getuid() -> u32;
 }
 unsafe fn libc_getuid() -> u32 {
-    getuid()
+    unsafe { getuid() }
 }
 
 fn mount_point(path: &Path) -> PathBuf {
