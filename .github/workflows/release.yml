@@ -1,0 +1,74 @@
+name: Release
+
+# Auto-tag + auto-release. On every push to main this reads the version from
+# Cargo.toml; if no release exists for that version yet it builds the binary and
+# publishes a GitHub Release tagged `v<version>` (which also creates the git
+# tag). Bumping `version` in Cargo.toml is therefore all it takes to cut a
+# release. You can also trigger it manually from the Actions tab.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: meta
+        run: |
+          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if this version was already released
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Release ${{ steps.meta.outputs.tag }} already exists — nothing to do."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install build dependencies
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtk-4-dev libadwaita-1-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+
+      - name: Install Rust
+        if: steps.check.outputs.exists == 'false'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build release binary
+        if: steps.check.outputs.exists == 'false'
+        run: cargo build --release --locked
+
+      - name: Package
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          mkdir -p dist
+          asset="tunesort-${{ steps.meta.outputs.version }}-x86_64-linux.tar.gz"
+          tar -C target/release -czf "dist/$asset" tunesort
+          (cd dist && sha256sum *.tar.gz > SHA256SUMS.txt)
+
+      - name: Create GitHub release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            dist/*.tar.gz dist/SHA256SUMS.txt \
+            --title "${{ steps.meta.outputs.tag }}" \
+            --generate-notes \
+            --target "${{ github.sha }}"

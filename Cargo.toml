@@ -1,0 +1,30 @@
+[package]
+name = "tunesort"
+version = "1.0.0"
+edition = "2026"
+description = "A dark, keyboard-driven music sorter for triaging large libraries (native GTK4)"
+license = "MIT"
+default-run = "tunesort"
+
+[[bin]]
+name = "tunesort"
+path = "src/main.rs"
+
+[dependencies]
+gtk = { package = "gtk4", version = "0.9", features = ["v4_12"] }
+adw = { package = "libadwaita", version = "0.7", features = ["v1_5"] }
+gstreamer = "0.23"
+gstreamer-app = "0.23"
+gstreamer-audio = "0.23"
+lofty = "0.21"
+trash = "5"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rand = "0.8"
+dirs = "5"
+async-channel = "2"
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

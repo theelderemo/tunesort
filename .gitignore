@@ -1,0 +1,12 @@
+/target
+/dist
+**/*.rs.bk
+Cargo.lock.bak
+.DS_Store
+
+# editor / OS
+*.swp
+*~
+.idea/
+.vscode/
+
