@@ -1,4 +1,12 @@
-# tunesort
+# tunesort  
+[![CI](https://github.com/theelderemo/tunesort/actions/workflows/ci.yml/badge.svg)](https://github.com/theelderemo/tunesort/actions/workflows/ci.yml)
+[![Release](https://github.com/theelderemo/tunesort/actions/workflows/release.yml/badge.svg)](https://github.com/theelderemo/tunesort/actions/workflows/release.yml)
+[![GitHub release](https://img.shields.io/github/v/release/theelderemo/tunesort)](https://github.com/theelderemo/tunesort/releases/latest)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/built%20with-Rust-orange)](https://www.rust-lang.org)
+[![Platform](https://img.shields.io/badge/platform-Linux-lightgrey)](https://github.com/theelderemo/tunesort)
+
+
 
 A lightweight, **dark**, keyboard-driven music sorter for triaging large
 libraries. Point it at a folder, then shuffle, audition, **delete to trash**,
