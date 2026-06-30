@@ -1,9 +1,9 @@
 [package]
 name = "tunesort"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2024"
 description = "A dark, keyboard-driven music sorter for triaging large libraries (native GTK4)"
-license = "MIT"
+license = "APACHE 2.0"
 default-run = "tunesort"
 
 [[bin]]
@@ -17,6 +17,7 @@ gstreamer = "0.23"
 gstreamer-app = "0.23"
 gstreamer-audio = "0.23"
 lofty = "0.21"
+midly = "0.5"
 trash = "5"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

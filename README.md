@@ -34,15 +34,21 @@ inside the app *and* in a single persistent config file, in the spirit of mpv.
 - **Optional visualizer** with several muted themes (`V`), fed by GStreamer's
   `spectrum` element.
 - **Metadata (ID3/tag) editing** - tags are read always; editing is **off by
-  default** and enabled with a settings toggle (`E`). Powered by `lofty`, works
-  across formats.
+  default** and enabled with a settings toggle (`E`). Powered by `lofty` for
+  audio formats and `midly` for MIDI (title maps to the MIDI TrackName
+  meta-event). Works across formats, including `.mid`/`.midi`.
+- **MIDI support** - `.mid` and `.midi` files load and play back via GStreamer's
+  MIDI synth pipeline. Format, track count, BPM, time signature, key, and
+  instrument names appear in the player subtitle when present in the file. The
+  waveform display shows a note density graph so you can still scrub through
+  the track.
 - **Everything is configurable** - General / Keybindings / Quick slots / Theme
   tabs, plus a raw **Config file** editor for total control. Rebind *any* action
   to *any* key; codes are physical-key based, so layout and numpad keys behave
   predictably.
 - **Handles all common audio formats** (mp3, flac, ogg, opus, wav, m4a/aac,
-  aiff, wma, …). Playback depends on the installed GStreamer plugins; file
-  operations work regardless.
+  aiff, wma, …) plus **MIDI** (`.mid`/`.midi`). Playback depends on the
+  installed GStreamer plugins; file operations work regardless.
 
 ## Install
 
@@ -133,12 +139,15 @@ full default set.
 - `src/config.rs` - load / save / merge of the JSON config.
 - `src/library.rs` - scanning, shuffle, trash / move with a multi-level undo
   stack.
-- `src/metadata.rs` - `lofty` tag read / write.
+- `src/metadata.rs` - `lofty` tag read / write for audio; `midly` tag read /
+  write for MIDI (reads TrackName, Tempo, KeySignature and more for display;
+  writes TrackName for the editable title field).
 - `src/player.rs` - a GStreamer `playbin` wrapper for playback, async waveform
-  peak extraction, and the `spectrum`-fed visualizer.
+  peak extraction, MIDI note-density waveform fallback, and the
+  `spectrum`-fed visualizer.
 - `src/ui.rs` - the GTK4 UI, the action registry, and keyboard dispatch.
 - `src/main.rs` - entry point and application bootstrap.
 
 ## License
 
-MIT - see [LICENSE](LICENSE).
+APACHE 2.0 - see [LICENSE](LICENSE).
