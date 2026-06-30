@@ -1,3 +1,17 @@
+//Copyright 2026 Christopher Dickinson
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use adw::prelude::*;
 use gtk::{cairo, gdk, gio, glib, pango};
 
@@ -7,7 +21,7 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use crate::config::{self, Config, NUM_QUICKSLOTS};
-use crate::library::Library;
+use crate::library::{is_midi, Library};
 use crate::metadata;
 use crate::player::{Player, PlayerEvent};
 
@@ -942,19 +956,45 @@ impl App {
                 self.current_tags.borrow_mut().clear();
                 self.title.set_text("No track");
                 self.subtitle.set_text("");
+                self.apply_metadata_visibility();
                 self.load_meta_inputs();
             }
             Some(path) => {
                 let tags = metadata::read_tags(path);
                 self.title.set_text(&metadata::display_title(path, &tags));
-                let album = tags.get("album").map(|s| s.trim().to_string()).unwrap_or_default();
                 let folder = path
                     .parent()
                     .and_then(|p| p.file_name())
                     .map(|n| n.to_string_lossy().to_string())
                     .unwrap_or_default();
-                self.subtitle.set_text(if album.is_empty() { &folder } else { &album });
+                if is_midi(path) {
+                    let mut parts: Vec<String> = Vec::new();
+                    if let Some(bpm) = tags.get("bpm").filter(|s| !s.is_empty()) {
+                        parts.push(format!("{bpm} BPM"));
+                    }
+                    if let Some(ts) = tags.get("time_sig").filter(|s| !s.is_empty()) {
+                        parts.push(ts.clone());
+                    }
+                    if let Some(key) = tags.get("key").filter(|s| !s.is_empty()) {
+                        parts.push(key.clone());
+                    }
+                    if let Some(fmt) = tags.get("format").filter(|s| !s.is_empty()) {
+                        parts.push(format!("Format {fmt}"));
+                    }
+                    if let Some(trk) = tags.get("tracks").filter(|s| !s.is_empty()) {
+                        parts.push(format!("{trk} tracks"));
+                    }
+                    if let Some(inst) = tags.get("instruments").filter(|s| !s.is_empty()) {
+                        parts.push(inst.clone());
+                    }
+                    let midi_info = parts.join("  \u{b7}  ");
+                    self.subtitle.set_text(if midi_info.is_empty() { &folder } else { &midi_info });
+                } else {
+                    let album = tags.get("album").map(|s| s.trim().to_string()).unwrap_or_default();
+                    self.subtitle.set_text(if album.is_empty() { &folder } else { &album });
+                }
                 *self.current_tags.borrow_mut() = tags;
+                self.apply_metadata_visibility();
                 self.update_playbtn();
                 self.load_meta_inputs();
             }
@@ -1080,8 +1120,8 @@ impl App {
     }
 
     fn apply_metadata_visibility(&self) {
-        let on = self.config.borrow().get_bool("metadata_editing", false);
-        self.meta_panel.set_visible(on);
+        let enabled = self.config.borrow().get_bool("metadata_editing", false);
+        self.meta_panel.set_visible(enabled);
     }
 
     fn load_meta_inputs(&self) {

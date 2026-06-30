@@ -1,3 +1,17 @@
+//Copyright 2026 Christopher Dickinson
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use gstreamer as gst;
 use gstreamer::glib;
 use gstreamer::prelude::*;
@@ -173,7 +187,10 @@ impl Player {
         let tx = self.tx.clone();
         let load_id = self.load_id.clone();
         std::thread::spawn(move || {
-            let peaks = decode_peaks(&path, &load_id, id).unwrap_or_default();
+            let mut peaks = decode_peaks(&path, &load_id, id).unwrap_or_default();
+            if peaks.is_empty() && crate::library::is_midi(&path) {
+                peaks = midi_note_density(&path);
+            }
             if load_id.load(Ordering::SeqCst) == id {
                 let _ = tx.try_send(PlayerEvent::Peaks { id, peaks });
             }
@@ -249,6 +266,48 @@ fn read_spectrum(s: &gst::StructureRef) -> Option<Vec<f32>> {
     } else {
         Some(out)
     }
+}
+
+fn midi_note_density(path: &Path) -> Vec<f32> {
+    let data = match std::fs::read(path) {
+        Ok(d) => d,
+        Err(_) => return Vec::new(),
+    };
+    if data.len() > 50 * 1024 * 1024 {
+        return Vec::new();
+    }
+    let smf = match midly::Smf::parse(&data) {
+        Ok(s) => s,
+        Err(_) => return Vec::new(),
+    };
+    let mut note_ticks: Vec<u64> = Vec::new();
+    for track in &smf.tracks {
+        let mut abs_tick: u64 = 0;
+        for event in track {
+            abs_tick = abs_tick.saturating_add(event.delta.as_int() as u64);
+            if let midly::TrackEventKind::Midi {
+                message: midly::MidiMessage::NoteOn { vel, .. },
+                ..
+            } = &event.kind
+            {
+                if vel.as_int() > 0 {
+                    note_ticks.push(abs_tick);
+                }
+            }
+        }
+    }
+    if note_ticks.is_empty() {
+        return Vec::new();
+    }
+    let max_tick = note_ticks.iter().copied().max().unwrap_or(1).max(1);
+    let mut counts = vec![0u32; PEAK_BUCKETS];
+    for &tick in &note_ticks {
+        let idx = ((tick as f64 / max_tick as f64) * (PEAK_BUCKETS - 1) as f64) as usize;
+        counts[idx.min(PEAK_BUCKETS - 1)] =
+            counts[idx.min(PEAK_BUCKETS - 1)].saturating_add(1);
+    }
+    let max_count = counts.iter().copied().max().unwrap_or(1).max(1) as f32;
+    counts.iter().map(|&c| c as f32 / max_count).collect()
 }
 
 fn decode_peaks(path: &Path, load_id: &AtomicU64, id: u64) -> Option<Vec<f32>> {

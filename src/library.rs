@@ -1,3 +1,17 @@
+//Copyright 2026 Christopher Dickinson
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+//you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -5,12 +19,24 @@ pub const AUDIO_EXTS: &[&str] = &[
     "mp3", "flac", "ogg", "oga", "opus", "wav", "wave", "aiff", "aif", "m4a", "m4b", "mp4", "aac",
     "alac", "ape", "wv", "wma", "mpc", "tta", "dsf", "dff", "ac3", "dts", "amr", "au", "ra", "mka",
     "caf", "spx", "3gp", "webm", "mp2", "m4r",
+    "mid", "midi", "kar", "xmf",
+    "mod", "xm", "s3m", "it",
+    "snd", "voc", "gsm",
 ];
+
+const MIDI_EXTS: &[&str] = &["mid", "midi", "kar", "xmf"];
 
 pub fn is_audio(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .map(|e| AUDIO_EXTS.contains(&e.to_lowercase().as_str()))
+        .unwrap_or(false)
+}
+
+pub fn is_midi(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| MIDI_EXTS.contains(&e.to_lowercase().as_str()))
         .unwrap_or(false)
 }
 
