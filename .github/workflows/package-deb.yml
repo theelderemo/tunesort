@@ -1,0 +1,84 @@
+name: Package deb
+
+# Runs after the Release workflow succeeds so the .deb is uploaded to the
+# same GitHub release as the tarball. Can also be triggered manually.
+
+on:
+  workflow_run:
+    workflows: ["Release"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine version
+        id: meta
+        run: |
+          version=$(grep -m1 '^version' Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if .deb already uploaded
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" --json assets \
+               2>/dev/null | grep -q '\.deb'; then
+            echo "exists=true"  >> "$GITHUB_OUTPUT"
+            echo ".deb already present on ${{ steps.meta.outputs.tag }} — skipping."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install build dependencies
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libgtk-4-dev libadwaita-1-dev \
+            libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+
+      - name: Install Rust
+        if: steps.check.outputs.exists == 'false'
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        if: steps.check.outputs.exists == 'false'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-deb-${{ hashFiles('Cargo.lock') }}
+
+      - name: Build release binary
+        if: steps.check.outputs.exists == 'false'
+        run: cargo build --release --locked
+
+      - name: Install cargo-deb
+        if: steps.check.outputs.exists == 'false'
+        run: cargo install cargo-deb
+
+      - name: Build .deb
+        if: steps.check.outputs.exists == 'false'
+        run: cargo deb --no-build
+
+      - name: Upload .deb to release
+        if: steps.check.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          deb=$(find target/debian -name '*.deb' | head -1)
+          gh release upload "${{ steps.meta.outputs.tag }}" "$deb"

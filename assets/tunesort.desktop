@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Tunesort
+Comment=A dark, keyboard-driven music sorter for triaging large libraries
+Exec=tunesort
+Icon=tunesort
+Terminal=false
+Type=Application
+Categories=AudioVideo;Audio;

@@ -1,10 +1,18 @@
 [package]
 name = "tunesort"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2024"
 description = "A dark, keyboard-driven music sorter for triaging large libraries (native GTK4)"
-license = "APACHE 2.0"
+license = "Apache-2.0"
 default-run = "tunesort"
+
+[package.metadata.deb]
+maintainer = "Christopher Dickinson <theelderemo@theelderemo.dev>"
+assets = [
+    ["target/release/tunesort", "usr/bin/", "755"],
+    ["assets/tunesort.desktop", "usr/share/applications/", "644"],
+    ["docs/tunesort.png", "usr/share/pixmaps/tunesort.png", "644"],
+]
 
 [[bin]]
 name = "tunesort"

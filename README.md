@@ -59,6 +59,17 @@ inside the app *and* in a single persistent config file, in the spirit of mpv.
 
 ## Install
 
+### Ubuntu / Debian — .deb package
+
+Each [release](../../releases) also includes a `.deb` built for Ubuntu/Debian.
+Download it and install with:
+
+```bash
+sudo apt install ./tunesort_*_amd64.deb
+```
+
+This handles runtime dependencies.
+
 ### Prebuilt binary (Linux x86_64)
 
 Each [release](../../releases) includes a prebuilt `tunesort` binary for 64-bit
@@ -157,4 +168,4 @@ full default set.
 
 ## License
 
-APACHE 2.0 - see [LICENSE](LICENSE).
+Apache-2.0 — see [LICENSE](LICENSE).
